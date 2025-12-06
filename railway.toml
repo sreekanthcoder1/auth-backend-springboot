@@ -1,0 +1,18 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/actuator/health"
+healthcheckTimeout = 300
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
+
+[env]
+PORT = "8080"
+SPRING_PROFILES_ACTIVE = "prod"
+JAVA_OPTS = "-Xmx450m -Xms200m -XX:+UseContainerSupport"
+
+[resources]
+memory = "512Mi"
+cpu = "0.5"

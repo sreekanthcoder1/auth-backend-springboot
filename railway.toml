@@ -8,10 +8,25 @@ healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
 
-[env]
-PORT = "8080"
-SPRING_PROFILES_ACTIVE = "prod"
-JAVA_OPTS = "-Xmx450m -Xms200m -XX:+UseContainerSupport"
+[[deploy.environmentVariables]]
+name = "SPRING_PROFILES_ACTIVE"
+value = "mysql"
+
+[[deploy.environmentVariables]]
+name = "JWT_SECRET"
+value = "RailwayProductionJWTSecret123456789012345678901234567890SECURE"
+
+[[deploy.environmentVariables]]
+name = "CORS_ORIGINS"
+value = "https://*.railway.app,http://localhost:3000,http://localhost:5173"
+
+[[deploy.environmentVariables]]
+name = "DB_MAX_CONNECTIONS"
+value = "20"
+
+[[deploy.environmentVariables]]
+name = "DB_MIN_CONNECTIONS"
+value = "5"
 
 [resources]
 memory = "512Mi"

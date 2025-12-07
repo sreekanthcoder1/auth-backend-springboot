@@ -1,5 +1,7 @@
 package com.example.authbackend.config;
 
+import java.net.URI;
+import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -9,15 +11,13 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.env.Environment;
 
-import javax.sql.DataSource;
-import java.net.URI;
-
 /**
- * Railway DataSource Configuration
- * Handles Railway's MySQL URL format and converts it to proper JDBC URL
+ * Railway DataSource Configuration - DISABLED
+ * This configuration is disabled to prevent MySQL connection attempts
+ * The application will use H2 database for reliable deployment
  */
 @Configuration
-@Profile("prod")
+@Profile("railway-disabled") // Profile that will never be activated
 public class RailwayDataSourceConfig {
 
     private final Environment environment;
@@ -28,7 +28,7 @@ public class RailwayDataSourceConfig {
 
     @Bean
     @Primary
-    @ConditionalOnProperty(name = "MYSQL_URL")
+    @ConditionalOnProperty(name = "MYSQL_URL_NEVER_EXISTS") // Disabled property
     public DataSource railwayDataSource() {
         String mysqlUrl = environment.getProperty("MYSQL_URL");
 
@@ -54,11 +54,16 @@ public class RailwayDataSourceConfig {
                 // Construct proper JDBC URL
                 String jdbcUrl = String.format(
                     "jdbc:mysql://%s:%d/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true",
-                    host, port, database
+                    host,
+                    port,
+                    database
                 );
 
                 System.out.println("Railway DataSource Configuration:");
-                System.out.println("Original MySQL URL: " + mysqlUrl.replaceAll(":[^:@]+@", ":****@"));
+                System.out.println(
+                    "Original MySQL URL: " +
+                        mysqlUrl.replaceAll(":[^:@]+@", ":****@")
+                );
                 System.out.println("Converted JDBC URL: " + jdbcUrl);
                 System.out.println("Username: " + username);
                 System.out.println("Database: " + database);
@@ -69,26 +74,42 @@ public class RailwayDataSourceConfig {
                     .password(password)
                     .driverClassName("com.mysql.cj.jdbc.Driver")
                     .build();
-
             } catch (Exception e) {
-                System.err.println("Error parsing Railway MySQL URL: " + e.getMessage());
+                System.err.println(
+                    "Error parsing Railway MySQL URL: " + e.getMessage()
+                );
                 e.printStackTrace();
-                throw new RuntimeException("Failed to configure Railway DataSource", e);
+                throw new RuntimeException(
+                    "Failed to configure Railway DataSource",
+                    e
+                );
             }
         }
 
         // Fallback to standard configuration
-        System.out.println("MYSQL_URL not found, falling back to standard configuration");
+        System.out.println(
+            "MYSQL_URL not found, falling back to standard configuration"
+        );
         return DataSourceBuilder.create()
-            .url(environment.getProperty("spring.datasource.url", "jdbc:mysql://localhost:3306/railway"))
-            .username(environment.getProperty("spring.datasource.username", "root"))
+            .url(
+                environment.getProperty(
+                    "spring.datasource.url",
+                    "jdbc:mysql://localhost:3306/railway"
+                )
+            )
+            .username(
+                environment.getProperty("spring.datasource.username", "root")
+            )
             .password(environment.getProperty("spring.datasource.password", ""))
             .driverClassName("com.mysql.cj.jdbc.Driver")
             .build();
     }
 
     @Bean
-    @ConditionalOnProperty(name = "DATABASE_URL", matchIfMissing = false)
+    @ConditionalOnProperty(
+        name = "DATABASE_URL_NEVER_EXISTS",
+        matchIfMissing = false
+    ) // Disabled property
     public DataSource standardDataSource() {
         System.out.println("Using standard DATABASE_URL configuration");
 
@@ -105,11 +126,17 @@ public class RailwayDataSourceConfig {
 
         // Add MySQL parameters if not present
         if (databaseUrl != null && !databaseUrl.contains("?")) {
-            databaseUrl += "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true";
+            databaseUrl +=
+                "?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true";
         }
 
         System.out.println("Standard DataSource Configuration:");
-        System.out.println("Database URL: " + (databaseUrl != null ? databaseUrl.replaceAll(":[^:@]+@", ":****@") : "null"));
+        System.out.println(
+            "Database URL: " +
+                (databaseUrl != null
+                    ? databaseUrl.replaceAll(":[^:@]+@", ":****@")
+                    : "null")
+        );
         System.out.println("Username: " + username);
 
         return DataSourceBuilder.create()

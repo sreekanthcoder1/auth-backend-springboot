@@ -1,0 +1,51 @@
+# Multi-stage Dockerfile for optimized Spring Boot application
+# This creates a much smaller production image (~150MB vs ~420MB)
+
+# Build stage
+FROM eclipse-temurin:17-jdk as builder
+
+WORKDIR /app
+
+# Install Maven (only in build stage)
+RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
+
+# Copy Maven files first for better caching
+COPY pom.xml .
+COPY src ./src
+
+# Build the application
+RUN mvn clean package -DskipTests
+
+# Production stage - use JRE Alpine for smaller image
+FROM eclipse-temurin:17-jre-alpine
+
+# Install curl for health checks
+RUN apk add --no-cache curl
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S spring && \
+    adduser -S spring -u 1001 -G spring
+
+WORKDIR /app
+
+# Copy only the built JAR from build stage
+COPY --from=builder /app/target/*.jar app.jar
+
+# Change ownership to non-root user
+RUN chown spring:spring app.jar
+
+# Switch to non-root user
+USER spring
+
+# Expose port
+EXPOSE $PORT
+
+# Set JVM optimization flags for containers
+ENV JAVA_OPTS="-Xmx450m -Xms200m -XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Djava.security.egd=file:/dev/./urandom"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
+
+# Run the application
+CMD java $JAVA_OPTS -Dserver.port=${PORT:-8080} -jar app.jar

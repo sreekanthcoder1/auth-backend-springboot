@@ -1,0 +1,86 @@
+# Railway-Optimized Dockerfile for Spring Boot with MySQL
+# Designed for production deployment on Railway with MySQL database
+
+FROM eclipse-temurin:17-jdk
+
+WORKDIR /app
+
+# Install Maven and curl for build and health checks
+RUN apt-get update && \
+    apt-get install -y maven curl && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get clean
+
+# Copy Maven configuration for dependency caching
+COPY pom.xml .
+
+# Download dependencies (this layer will be cached)
+RUN mvn dependency:go-offline -B
+
+# Copy source code
+COPY src ./src
+
+# Build the application
+RUN mvn clean package -DskipTests -B && \
+    ls -la target/ && \
+    echo "Build completed successfully"
+
+# Create non-root user for security
+RUN groupadd -r appuser && \
+    useradd -r -g appuser -d /app -s /bin/bash appuser && \
+    chown -R appuser:appuser /app
+
+# Health check for Railway
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/actuator/health || exit 1
+
+# Environment variables optimized for Railway
+ENV JAVA_OPTS="-Xmx450m -Xms200m -XX:+UseG1GC -XX:MaxGCPauseMillis=200"
+
+# Switch to non-root user
+USER appuser
+
+# Expose port (Railway sets this dynamically)
+EXPOSE ${PORT}
+
+# Create startup script optimized for Railway MySQL
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "=== RAILWAY DEPLOYMENT STARTUP ==="\n\
+echo "Port: ${PORT:-8080}"\n\
+echo "Java Options: $JAVA_OPTS"\n\
+echo "Active Profile: ${SPRING_PROFILES_ACTIVE:-default}"\n\
+echo "Railway Environment: ${RAILWAY_ENVIRONMENT:-not-railway}"\n\
+echo "Database Type: MySQL (Railway)"\n\
+echo "========================"\n\
+\n\
+# Find the JAR file\n\
+JAR_FILE=$(find /app/target -name "*.jar" -type f | head -1)\n\
+if [ -z "$JAR_FILE" ]; then\n\
+    echo "ERROR: No JAR file found in /app/target/"\n\
+    ls -la /app/target/\n\
+    exit 1\n\
+fi\n\
+echo "Starting JAR: $JAR_FILE"\n\
+\n\
+# Environment validation for Railway\n\
+echo "Environment Validation:"\n\
+echo "- SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-WARNING: not set}"\n\
+echo "- MYSQL_URL: ${MYSQL_URL:+✅ configured}${MYSQL_URL:-❌ not set}"\n\
+echo "- JWT_SECRET: ${JWT_SECRET:+✅ configured}${JWT_SECRET:-❌ not set}"\n\
+echo "- CORS_ORIGINS: ${CORS_ORIGINS:-using defaults}"\n\
+echo "========================"\n\
+\n\
+# Start the Spring Boot application\n\
+# Railway automatically provides MYSQL_URL and other database variables\n\
+echo "Starting Spring Boot application..."\n\
+exec java $JAVA_OPTS \\\n\
+    -Dserver.port=${PORT:-8080} \\\n\
+    -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-mysql} \\\n\
+    -Dmanagement.endpoints.web.exposure.include=health,info \\\n\
+    -Dmanagement.endpoint.health.show-details=always \\\n\
+    -jar "$JAR_FILE"' > /app/start.sh && \
+    chmod +x /app/start.sh
+
+# Run the application
+CMD ["/app/start.sh"]

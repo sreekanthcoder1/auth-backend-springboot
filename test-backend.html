@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Connectivity Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .test-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.testing {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            text-align: left;
+        }
+
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .instructions h3 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+
+        .backend-url {
+            background: #f5f5f5;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            color: #d32f2f;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 Backend Connectivity Test</h1>
+
+        <div class="test-section">
+            <h3>Backend Status</h3>
+            <p>Testing connection to: <span class="backend-url">http://localhost:8080</span></p>
+            <button onclick="testConnection()">Test Connection</button>
+            <span id="connectionStatus" class="status"></span>
+            <div id="connectionResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>API Endpoints Test</h3>
+            <button onclick="testSignupEndpoint()">Test Signup Endpoint</button>
+            <button onclick="testLoginEndpoint()">Test Login Endpoint</button>
+            <span id="apiStatus" class="status"></span>
+            <div id="apiResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Database Test</h3>
+            <button onclick="testDatabaseConnection()">Test Database</button>
+            <span id="dbStatus" class="status"></span>
+            <div id="dbResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Full Integration Test</h3>
+            <button onclick="runFullTest()">Run All Tests</button>
+            <span id="fullTestStatus" class="status"></span>
+            <div id="fullTestResult" class="result" style="display: none;"></div>
+        </div>
+
+        <div class="instructions">
+            <h3>📋 Instructions</h3>
+            <ol>
+                <li><strong>Start your backend:</strong>
+                    <ul>
+                        <li>Open your IDE (IntelliJ IDEA, Eclipse, VS Code)</li>
+                        <li>Open the <code>auth-backend</code> project</li>
+                        <li>Run <code>AuthBackendApplication.java</code></li>
+                        <li>Or use: <code>mvn spring-boot:run</code></li>
+                    </ul>
+                </li>
+                <li><strong>Ensure MySQL is running</strong> with the <code>auth_demo</code> database</li>
+                <li><strong>Click "Test Connection"</strong> to verify backend is accessible</li>
+                <li><strong>Run API tests</strong> to check endpoints</li>
+                <li><strong>If all tests pass,</strong> your backend is ready for the frontend!</li>
+            </ol>
+
+            <h3>🐛 Common Issues</h3>
+            <ul>
+                <li><strong>Connection failed:</strong> Backend not running on port 8080</li>
+                <li><strong>CORS errors:</strong> Frontend/Backend CORS mismatch</li>
+                <li><strong>Database errors:</strong> MySQL not running or auth_demo database missing</li>
+                <li><strong>API errors:</strong> Check Spring Boot console for detailed logs</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8080';
+
+        function setStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${status}`;
+            element.textContent = message;
+        }
+
+        function showResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = result;
+        }
+
+        function hideResult(elementId) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'none';
+        }
+
+        async function testConnection() {
+            setStatus('connectionStatus', 'testing', 'Testing...');
+            hideResult('connectionResult');
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'GET',
+                    mode: 'cors'
+                });
+
+                if (response.ok || response.status === 404) {
+                    setStatus('connectionStatus', 'success', '✅ Connected');
+                    showResult('connectionResult', `✅ Backend is running!\nStatus: ${response.status}\nURL: ${API_URL}`);
+                } else {
+                    setStatus('connectionStatus', 'error', '❌ Error');
+                    showResult('connectionResult', `❌ Unexpected response\nStatus: ${response.status}\nStatusText: ${response.statusText}`);
+                }
+            } catch (error) {
+                setStatus('connectionStatus', 'error', '❌ Failed');
+                showResult('connectionResult', `❌ Connection failed\nError: ${error.message}\n\nPossible causes:\n- Backend not running\n- Wrong port (should be 8080)\n- CORS issues\n- Network problems`);
+            }
+        }
+
+        async function testSignupEndpoint() {
+            setStatus('apiStatus', 'testing', 'Testing signup...');
+            hideResult('apiResult');
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: 'Test User',
+                        email: 'test@example.com',
+                        password: 'password123'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    setStatus('apiStatus', 'success', '✅ Signup works');
+                    showResult('apiResult', `✅ Signup endpoint working!\nResponse: ${JSON.stringify(data, null, 2)}`);
+                } else if (response.status === 400 && data.message && data.message.includes('already in use')) {
+                    setStatus('apiStatus', 'success', '✅ Signup endpoint works');
+                    showResult('apiResult', `✅ Signup endpoint is working!\n(User already exists - this is expected)\nResponse: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    setStatus('apiStatus', 'error', '❌ Signup error');
+                    showResult('apiResult', `❌ Signup failed\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`);
+                }
+            } catch (error) {
+                setStatus('apiStatus', 'error', '❌ Signup failed');
+                showResult('apiResult', `❌ Signup request failed\nError: ${error.message}`);
+            }
+        }
+
+        async function testLoginEndpoint() {
+            setStatus('apiStatus', 'testing', 'Testing login...');
+            hideResult('apiResult');
+
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'test@example.com',
+                        password: 'wrongpassword'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.status === 401) {
+                    setStatus('apiStatus', 'success', '✅ Login endpoint works');
+                    showResult('apiResult', `✅ Login endpoint is working!\n(Invalid credentials response is expected)\nResponse: ${JSON.stringify(data, null, 2)}`);
+                } else if (response.ok) {
+                    setStatus('apiStatus', 'success', '✅ Login works');
+                    showResult('apiResult', `✅ Login successful!\nResponse: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    setStatus('apiStatus', 'error', '❌ Login error');
+                    showResult('apiResult', `❌ Unexpected login response\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}`);
+                }
+            } catch (error) {
+                setStatus('apiStatus', 'error', '❌ Login failed');
+                showResult('apiResult', `❌ Login request failed\nError: ${error.message}`);
+            }
+        }
+
+        async function testDatabaseConnection() {
+            setStatus('dbStatus', 'testing', 'Testing DB...');
+            hideResult('dbResult');
+
+            // Try to create a user to test database connectivity
+            try {
+                const response = await fetch(`${API_URL}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: `Test User ${Date.now()}`,
+                        email: `test${Date.now()}@example.com`,
+                        password: 'password123'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    setStatus('dbStatus', 'success', '✅ Database works');
+                    showResult('dbResult', `✅ Database is working!\nUser created successfully.\nResponse: ${JSON.stringify(data, null, 2)}`);
+                } else {
+                    setStatus('dbStatus', 'error', '❌ Database error');
+                    showResult('dbResult', `❌ Database operation failed\nStatus: ${response.status}\nResponse: ${JSON.stringify(data, null, 2)}\n\nPossible causes:\n- MySQL not running\n- Database 'auth_demo' doesn't exist\n- Wrong database credentials\n- Connection timeout`);
+                }
+            } catch (error) {
+                setStatus('dbStatus', 'error', '❌ Database failed');
+                showResult('dbResult', `❌ Database test failed\nError: ${error.message}\n\nCheck:\n- MySQL server running\n- Database credentials\n- Network connectivity`);
+            }
+        }
+
+        async function runFullTest() {
+            setStatus('fullTestStatus', 'testing', 'Running all tests...');
+            hideResult('fullTestResult');
+
+            let results = 'Full Integration Test Results:\n\n';
+            let allPassed = true;
+
+            // Test 1: Connection
+            try {
+                const response = await fetch(API_URL);
+                if (response.ok || response.status === 404) {
+                    results += '✅ Connection Test: PASSED\n';
+                } else {
+                    results += '❌ Connection Test: FAILED\n';
+                    allPassed = false;
+                }
+            } catch (error) {
+                results += `❌ Connection Test: FAILED (${error.message})\n`;
+                allPassed = false;
+            }
+
+            // Test 2: Signup endpoint
+            try {
+                const response = await fetch(`${API_URL}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: 'Test', email: 'test@test.com', password: 'test123' })
+                });
+
+                if (response.ok || (response.status === 400 && (await response.json()).message.includes('already in use'))) {
+                    results += '✅ Signup Endpoint: PASSED\n';
+                } else {
+                    results += '❌ Signup Endpoint: FAILED\n';
+                    allPassed = false;
+                }
+            } catch (error) {
+                results += `❌ Signup Endpoint: FAILED (${error.message})\n`;
+                allPassed = false;
+            }
+
+            // Test 3: Login endpoint
+            try {
+                const response = await fetch(`${API_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: 'test@test.com', password: 'wrong' })
+                });
+
+                if (response.status === 401) {
+                    results += '✅ Login Endpoint: PASSED\n';
+                } else {
+                    results += '❌ Login Endpoint: UNEXPECTED RESPONSE\n';
+                    allPassed = false;
+                }
+            } catch (error) {
+                results += `❌ Login Endpoint: FAILED (${error.message})\n`;
+                allPassed = false;
+            }
+
+            results += '\n';
+            if (allPassed) {
+                results += '🎉 ALL TESTS PASSED!\nYour backend is ready for the frontend!';
+                setStatus('fullTestStatus', 'success', '✅ All tests passed');
+            } else {
+                results += '❌ Some tests failed.\nCheck the individual test results above.';
+                setStatus('fullTestStatus', 'error', '❌ Some tests failed');
+            }
+
+            showResult('fullTestResult', results);
+        }
+
+        // Auto-run connection test on page load
+        window.onload = function() {
+            setTimeout(testConnection, 1000);
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+name: Deploy Frontend to Vercel
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'react-frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy-frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: './react-frontend/package-lock.json'
+
+    - name: Install dependencies
+      working-directory: ./react-frontend
+      run: npm ci
+
+    - name: Run tests
+      working-directory: ./react-frontend
+      run: npm test -- --watchAll=false --passWithNoTests
+      continue-on-error: true
+
+    - name: Build application
+      working-directory: ./react-frontend
+      run: npm run build
+      env:
+        VITE_API_URL: ${{ secrets.VITE_API_URL }}
+
+    - name: Deploy to Vercel
+      uses: vercel/action@v1
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ./react-frontend
+
+    - name: Wait for deployment
+      run: sleep 30
+
+    - name: Health Check
+      run: |
+        echo "Checking frontend health..."
+        for i in {1..5}; do
+          if curl -f ${{ secrets.FRONTEND_URL }}; then
+            echo "✅ Frontend is healthy!"
+            exit 0
+          fi
+          echo "Attempt $i failed, retrying in 15s..."
+          sleep 15
+        done
+        echo "❌ Health check failed"
+        exit 1
+
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ ${{ job.status }} == 'success' ]; then
+          echo "🎉 Frontend deployment successful!"
+          echo "URL: ${{ secrets.FRONTEND_URL }}"
+        else
+          echo "❌ Frontend deployment failed"
+        fi

@@ -1,0 +1,131 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: auth-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 162002
+      MYSQL_DATABASE: auth_demo
+      MYSQL_USER: auth_user
+      MYSQL_PASSWORD: auth_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./auth-backend
+      dockerfile: Dockerfile
+    container_name: auth-backend
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      DATABASE_URL: jdbc:mysql://mysql:3306/auth_demo?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+      DATABASE_USERNAME: root
+      DATABASE_PASSWORD: 162002
+      JWT_SECRET: DEVELOPMENT_SECRET_KEY_CHANGE_IN_PRODUCTION_AT_LEAST_32_CHARACTERS_LONG
+      SENDGRID_API_KEY: ${SENDGRID_API_KEY:-}
+      EMAIL_FROM: no-reply@example.com
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+      PORT: 8080
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./react-frontend
+      dockerfile: Dockerfile
+    container_name: auth-frontend
+    environment:
+      VITE_API_URL: http://localhost:8080
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Development Frontend (Vite dev server)
+  frontend-dev:
+    build:
+      context: ./react-frontend
+      dockerfile: Dockerfile.dev
+    container_name: auth-frontend-dev
+    environment:
+      VITE_API_URL: http://localhost:8080
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./react-frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - auth-network
+    profiles:
+      - dev
+
+  # Adminer for database management
+  adminer:
+    image: adminer:4.8.1
+    container_name: auth-adminer
+    ports:
+      - "8081:8080"
+    networks:
+      - auth-network
+    profiles:
+      - tools
+
+  # Redis for session storage (optional)
+  redis:
+    image: redis:7-alpine
+    container_name: auth-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - auth-network
+    profiles:
+      - cache
+
+networks:
+  auth-network:
+    driver: bridge
+    name: auth-network
+
+volumes:
+  mysql_data:
+    name: auth_mysql_data
+  redis_data:
+    name: auth_redis_data

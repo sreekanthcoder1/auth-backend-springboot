@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spring Boot Deployment Error Diagnostics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545, #bd2130);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .error-section {
+            border: 1px solid #dc3545;
+            border-radius: 5px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+        .error-header {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 15px;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+        .error-header:hover {
+            background-color: #c82333;
+        }
+        .error-content {
+            display: none;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-top: 1px solid #dc3545;
+        }
+        .error-content.active {
+            display: block;
+        }
+        .solution {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .solution-title {
+            color: #155724;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .code-block {
+            background-color: #f1f3f4;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            padding: 12px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        .env-var {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            color: #856404;
+        }
+        .success {
+            background-color: #d1f2eb;
+            border: 1px solid #a3e4d7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+            color: #0e6655;
+        }
+        .checklist {
+            list-style: none;
+            padding: 0;
+        }
+        .checklist li {
+            margin: 8px 0;
+            padding: 8px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #28a745;
+        }
+        .checklist li:before {
+            content: "✓ ";
+            color: #28a745;
+            font-weight: bold;
+        }
+        .step {
+            counter-increment: step-counter;
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            border-radius: 4px;
+        }
+        .step:before {
+            content: "Step " counter(step-counter) ": ";
+            font-weight: bold;
+            color: #007bff;
+        }
+        .steps-container {
+            counter-reset: step-counter;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .urgent {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #721c24;
+        }
+        .platform-tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background-color: #e9ecef;
+            border: 1px solid #dee2e6;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .tab.active {
+            background-color: #007bff;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 0 0 4px 4px;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1></h1>🚨 Spring Boot Deployment Error Diagnostics</h1>
+        <p>Diagnose and fix "Application run failed" errors quickly</p>
+    </div>
+
+    <div class="container">
+        <div class="urgent">
+            <h2>🔥 URGENT: Your Current Error Analysis</h2>
+            <p></p><strong>Error Pattern:</strong> "Application run failed" at startup</p>
+            <p><strong>Your Environment Variables Issue:</strong></p>
+            <ul>
+                <li>❌ <code>SPRING_PROFILES_ACTIVE=prod</code> (should be <code>mysql</code>)</li>
+                <li>❌ <code>MYSQL_URL</code> malformed (should be <code>DATABASE_URL</code>)</li>
+                <li>❌ Extra variables causing conflicts</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🎯 IMMEDIATE FIX FOR YOUR DEPLOYMENT</h2>
+        <div class="steps-container">
+            <div class="step">
+                <strong>Replace ALL your environment variables with these exact values:</strong>
+                <div class="env-var">
+                    <code>SPRING_PROFILES_ACTIVE=mysql</code><br>
+                    <code>DATABASE_URL=mysql://root:NNStLLykKYwDEmkgxjYoRPnMlylsDrpY@mysql.railway.internal:3306/railway</code><br>
+                    <code>JWT_SECRET=RailwayProductionJWTSecretKey2024MustBe32CharactersLongMinimum</code><br>
+                    <code>CORS_ORIGINS=http://localhost:5173,http://localhost:3000,https://your-frontend.onrender.com</code><br>
+                    <code>PORT=8080</code>
+                </div>
+            </div>
+            <div class="step">
+                <strong>DELETE these conflicting variables:</strong>
+                <div class="code-block">
+                    MYSQL_ROOT_PASSWORD (not needed)<br>
+                    MYSQL_URL (wrong variable name)<br>
+                    MYSQLDATABASE (wrong format)<br>
+                    MYSQLPORT (not needed)
+                </div>
+            </div>
+            <div class="step">
+                <strong></strong>Redeploy and check logs for:</strong>
+                <ul class="checklist">
+                    <li>"Started AuthBackendApplication"</li>
+                    <li>"The following profiles are active: mysql"</li>
+                    <li>"HikariPool-1 - Starting..."</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🔍 Common Spring Boot Deployment Errors</h2>
+        <p>Click on each error type to see diagnosis and solutions:</p>
+
+        <div class="error-section">
+            <div class="error-header" onclick="toggleError('config-error')">
+                InactiveConfigDataAccessException - Configuration Error
+            </div>
+            <div id="config-error" class="error-content">
+                <h4>Full Error Message:</h4>
+                <div class="code-block">
+                    org.springframework.boot.context.config.InactiveConfigDataAccessException:
+                    Inactive property source cannot contain property 'spring.profiles.active'
+                </div>
+                <div class="solution">
+                    <div class="solution-title">✅ SOLUTION:</div>
+                    <p><strong>Cause</p>:</strong> Wrong profile name or conflicting profile settings</p>
+                    <p><strong>Fix:</strong> Change <code>SPRING_PROFILES_ACTIVE=prod</code> to <code>SPRING_PROFILES_ACTIVE=mysql</code></p>
+                    <p><strong>Why:</strong> Your app only has 'mysql' and 'test' profiles configured, not 'prod'</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="error-section">
+            <div class="error-header" onclick="toggleError('datasource-error')">
+                Failed to configure a DataSource - Database Connection Error
+            </div>
+            <div id="datasource-error" class="error-content">
+                <h4>Full Error Message:</h4>
+                <div class="code-block">
+                    Failed to configure a DataSource: 'url' attribute is not specified
+                    Consider the following: If you want an embedded database (H2, HSQL or Derby)
+                </div>
+                <div class="solution">
+                    <div class="solution-title">✅ SOLUTION:</div>
+                    <p><strong>Cause:</strong> DATABASE_URL is missing or malformed</p>
+                    <p><strong>Fix:</strong> Set correct DATABASE_URL format:</p>
+                    <div class="code-block">DATABASE_URL=mysql://username:password@host:port/database</div>
+                    <p><strong>Your Corrected URL:</strong></p>
+                    <div class="code-block">DATABASE_URL=mysql://root:NNStLLykKYwDEmkgxjYoRPnMlylsDrpY@mysql.railway.internal:3306/railway</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="error-section">
+            <div class="error-header" onclick="toggleError('bean-creation-error')">
+                Error creating bean - JPA/Hibernate Error
+            </div>
+            <div id="bean-creation-error" class="error-content">
+                <h4>Full Error Message:</h4>
+                <div class="code-block">
+                    Error creating bean with name 'entityManagerFactory'
+                    Unable to create requested service [org.hibernate.engine.jdbc.env.spi.JdbcEnvironment]
+                </div>
+                <div class="solution">
+                    <div class="solution-title">✅ SOLUTION:</div>
+                    <p><strong>Cause:</strong> Database connection failure or wrong dialect</p>
+                    <p><strong>Checks:</strong></p>
+                    <ul>
+                        <li></li>Verify DATABASE_URL credentials are correct</li>
+                        <li>Ensure MySQL database exists</li>
+                        <li>Check network connectivity to database</li>
+                        <li>Verify <code>SPRING_PROFILES_ACTIVE=mysql</code> is set</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="error-section">
+            <div class="error-header" onclick="toggleError('port-error')">
+                Web server failed to start - Port Error
+            </div>
+            <div id="port-error" class="error-content">
+                <h4>Full Error Message:</h4>
+                <div class="code-block">
+                    Web server failed to start. Port 8080 was already in use.
+                </div>
+                <div class="solution">
+                    <div class="solution-title">✅ SOLUTION:</div>
+                    <p><strong>Cause:</strong> Port conflict or missing PORT variable</p>
+                    <p><strong>Fix:</strong> Set PORT environment variable:</p>
+                    <div class="code-block">PORT=8080</div>
+                    <p>Or try different port like <code>PORT=10000</code></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="error-section">
+            <div class="error-header" onclick="toggleError('jwt-error')">
+                JWT Secret Error - Security Configuration
+            </div>
+            <div id="jwt-error" class="error-content">
+                <h4>Full Error Message:</h4>
+                <div class="code-block">
+                    The specified key byte array is 0 bits which is not secure enough
+                </div>
+                <div class="solution">
+                    <div class="solution-title">✅ SOLUTION:</div>
+                    <p><strong>Cause:</strong> JWT_SECRET is too short or missing</p>
+                    <p><strong>Fix:</strong> Use JWT secret with minimum 32 characters:</p>
+                    <div class="code-block">JWT_SECRET=RailwayProductionJWTSecretKey2024MustBe32CharactersLongMinimum</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🏗️ Platform-Specific Instructions</h2>
+        <div class="platform-tabs">
+            <div class="tab active" onclick="showPlatform('railway')">Railway</div>
+            <div class="tab" onclick="showPlatform('render')">Render</div>
+            <div class="tab" onclick="showPlatform('docker')">Docker</div>
+        </div>
+
+        <div id="railway" class="tab-content active">
+            <h3>🚂 Railway Deployment Fix</h3>
+            <div class="steps-container">
+                <div class="step">
+                    Go to Railway dashboard → Select your project → Click backend service
+                </div>
+                <div class="step">
+                    Navigate to "Variables" tab
+                </div>
+                <div class="step">
+                    DELETE all existing variables
+                </div>
+                <div class="step">
+                    ADD these exact variables:
+                    <div class="env-var">
+                        SPRING_PROFILES_ACTIVE=mysql<br>
+                        DATABASE_URL=mysql://root:NNStLLykKYwDEmkgxjYoRPnMlylsDrpY@mysql.railway.internal:3306/railway<br>
+                        JWT_SECRET=RailwayProductionJWTSecretKey2024MustBe32CharactersLongMinimum<br>
+                        CORS_ORIGINS=http://localhost:5173,http://localhost:3000<br>
+                        PORT=8080
+                    </div>
+                </div>
+                <div class="step">
+                    Click "Deploy" and monitor logs in "Deployments" tab
+                </div>
+            </div>
+        </div>
+
+        <div id="render" class="tab-content">
+            <h3>🌐 Render Deployment Fix</h3>
+            <div class="steps-container">
+                <div class="step">
+                    Go to Render dashboard → Select your web service
+                </div>
+                <div class="step">
+                    Navigate to "Environment" tab
+                </div>
+                <div class="step">
+                    Clear existing variables and add:
+                    <div class="env-var">
+                        SPRING_PROFILES_ACTIVE=mysql<br>
+                        DATABASE_URL=[Your Render database URL]<br>
+                        JWT_SECRET=RailwayProductionJWTSecretKey2024MustBe32CharactersLongMinimum<br>
+                        CORS_ORIGINS=https://your-frontend.onrender.com<br>
+                        PORT=8080
+                    </div>
+                </div>
+                <div class="step">
+                    Save changes and redeploy
+                </div>
+                <div class="step">
+                    Monitor logs in "Logs" tab
+                </div>
+            </div>
+        </div>
+
+        <div id="docker" class="tab-content">
+            <h3>🐳 Docker Deployment Fix</h3>
+            <div class="steps-container">
+                <div class="step">
+                    Update your docker-compose.yml:
+                    <div class="code-block">
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=mysql
+      - DATABASE_URL=mysql://root:password@db:3306/appdb
+      - JWT_SECRET=RailwayProductionJWTSecretKey2024MustBe32CharactersLongMinimum
+      - CORS_ORIGINS=http://localhost:3000
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=appdb
+                    </div>
+                </div>
+                <div class="step">
+                    Run: <code>docker-compose up --build</code>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>✅ Success Verification</h2>
+        <p>After applying the fixes, your logs should show:</p>
+        <div class="success">
+            <h4></h4>✅ SUCCESS INDICATORS:</h4>
+            <ul class="checklist">
+                <li>Started AuthBackendApplication in X.XXX seconds</li>
+                <li>The following profiles are active: mysql</li>
+                <li>HikariPool-1 - Starting...</li>
+                <li>HikariPool-1 - Start completed</li>
+                <li>Tomcat started on port(s): 8080 (http)</li>
+            </ul>
+        </div>
+
+        <div class="warning">
+            <h4>❌ FAILURE INDICATORS (if you still see these, configuration is wrong):</h4>
+            <ul></ul>
+                <li>InactiveConfigDataAccessException</li>
+                <li>Failed to configure a DataSource</li>
+                <li>The following profiles are active: prod</li>
+                <li>No qualifying bean of type 'javax.sql.DataSource'</li>
+                <li>Web server failed to start</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Test Your Fixed Deployment</h2>
+        <p>Once deployment is successful, test these endpoints:</p>
+        <div class="code-block">
+# Health check
+curl https://your-app.railway.app/api/health
+
+# Actuator health
+curl https://your-app.railway.app/actuator/health
+
+# Test signup
+curl -X POST https://your-app.railway.app/api/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"username":"testuser","email":"test@example.com","password":"password123"}'
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🆘 Emergency Fallback</h2>
+        <p>If nothing works, try this minimal configuration to get the app running:</p>
+        <div class="env-var">
+            <strong>Minimal Environment Variables:</strong><br>
+            PORT</strong>=8080<br>
+            JWT_SECRET=MinimalTestSecretKey12345678901234567890<br>
+            CORS_ORIGINS=*<br>
+            <em>(No SPRING_PROFILES_ACTIVE - uses H2 database)</em>
+        </div>
+        <p>This will start your app with an in-memory H2 database for basic testing.</p>
+    </div>
+
+    <script>
+        function toggleError(errorId) {
+            const content = document.getElementById(errorId);
+            content.classList.toggle('active');
+        }
+
+        function showPlatform(platform) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Hide all tab buttons
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            // Show selected platform
+            document.getElementById(platform).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Auto-expand the most likely error for this user
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-expand configuration error since that's their issue
+            document.getElementById('config-error').classList.add('active');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Deployment Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-success {
+            background-color: #28a745;
+        }
+        .status-error {
+            background-color: #dc3545;
+        }
+        .status-pending {
+            background-color: #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1></h1>🚀 Backend Deployment Test</h1>
+        <p>Test your Spring Boot backend deployment to verify the configuration fix worked.</p>
+
+        <div class="test-section info">
+            <h3></h3>📋 Configuration Check</h3>
+            <p>Enter your backend URL to test the deployment:</p>
+            <input type="text" id="backendUrl" placeholder="https://your-app.onrender.com" value="http://localhost:8080">
+            <button onclick="updateUrl()">Update URL</button>
+            <p></p><strong>Current Backend URL:</strong> <span id="currentUrl">http://localhost:8080</span></p>
+        </div>
+
+        <div class="test-section">
+            <h3>🔍 Test Results</h3>
+            <div id="testResults">
+                <p></p>Click "Run All Tests" to start testing...</p>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Individual Tests</h3>
+            <button onclick="testHealth()">Test Health Endpoint</button>
+            <button onclick="testActuatorHealth()">Test Actuator Health</button>
+            <button onclick="testSignup()">Test Signup API</button>
+            <button onclick="testLogin()">Test Login API</button>
+            <button onclick="testCORS()">Test CORS</button>
+            <button onclick="runAllTests()">Run All Tests</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Environment Variables Check</h3>
+            <div id="envCheck">
+                <p>Expected environment variables for your deployment:</p>
+                <ul>
+                    <li><code>SPRING_PROFILES_ACTIVE=mysql</code> (not "prod")</li>
+                    <li><code>DATABASE_URL=mysql://root:password@host:port/database</code></li>
+                    <li><code>JWT_SECRET=32+ character secret</code></li>
+                    <li><code>CORS_ORIGINS=http://localhost:3000,https://your-frontend.com</code></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📝 Test Logs</h3>
+            <div id="logs" class="log">Test logs will appear here...</div>
+            <button onclick="clearLogs()">Clear Logs</button>
+        </div>
+    </div>
+
+    <script>
+        let backendUrl = 'http://localhost:8080';
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('logs');
+            const colorMap = {
+                'success': '#28a745',
+                'error': '#dc3545',
+                'info': '#007bff',
+                'warning': '#ffc107'
+            };
+            const color = colorMap[type] || '#000';
+            logElement.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = 'Logs cleared...\n';
+        }
+
+        function updateUrl() {
+            const input = document.getElementById('backendUrl');
+            backendUrl = input.value.replace(/\/$/, ''); // Remove trailing slash
+            document.getElementById('currentUrl').textContent = backendUrl;
+            log(`Backend URL updated to: ${backendUrl}`, 'info');
+        }
+
+        function updateTestStatus(testName, status, message) {
+            const statusClass = status === 'success' ? 'status-success' :
+                              status === 'error' ? 'status-error' : 'status-pending';
+            const resultDiv = document.getElementById('testResults');
+
+            // Find existing result or create new one
+            let testDiv = document.getElementById(`test-${testName}`);
+            if (!testDiv) {
+                testDiv = document.createElement('div');
+                testDiv.id = `test-${testName}`;
+                testDiv.style.margin = '5px 0';
+                resultDiv.appendChild(testDiv);
+            }
+
+            testDiv.innerHTML = `
+                <span class="status-indicator ${statusClass}"></span>
+                <strong>${testName}:</strong> ${message}
+            `;
+        }
+
+        async function testHealth() {
+            const testName = 'Health Check';
+            updateTestStatus(testName, 'pending', 'Testing...');
+            log('Testing health endpoint...', 'info');
+
+            try {
+                const response = await fetch(`${backendUrl}/api/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateTestStatus(testName, 'success', `✅ Status: ${data.status || 'UP'}`);
+                    log(`Health check successful: ${JSON.stringify(data)}`, 'success');
+                    return true;
+                } else {
+                    updateTestStatus(testName, 'error', `❌ HTTP ${response.status}`);
+                    log(`Health check failed: HTTP ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateTestStatus(testName, 'error', `❌ ${error.message}`);
+                log(`Health check error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testActuatorHealth() {
+            const testName = 'Actuator Health';
+            updateTestStatus(testName, 'pending', 'Testing...');
+            log('Testing actuator health endpoint...', 'info');
+
+            try {
+                const response = await fetch(`${backendUrl}/actuator/health`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const dbStatus = data.components?.db?.status || 'Unknown';
+                    updateTestStatus(testName, 'success', `✅ DB Status: ${dbStatus}`);
+                    log(`Actuator health successful: ${JSON.stringify(data)}`, 'success');
+                    return true;
+                } else {
+                    updateTestStatus(testName, 'error', `❌ HTTP ${response.status}`);
+                    log(`Actuator health failed: HTTP ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateTestStatus(testName, 'error', `❌ ${error.message}`);
+                log(`Actuator health error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testSignup() {
+            const testName = 'Signup API';
+            updateTestStatus(testName, 'pending', 'Testing...');
+            log('Testing signup endpoint...', 'info');
+
+            const testUser = {
+                username: `testuser_${Date.now()}`,
+                email: `test_${Date.now()}@example.com`,
+                password: 'TestPassword123!'
+            };
+
+            try {
+                const response = await fetch(`${backendUrl}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testUser)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateTestStatus(testName, 'success', '✅ User created successfully');
+                    log(`Signup successful: ${JSON.stringify(data)}`, 'success');
+                    return true;
+                } else {
+                    const errorText = await response.text();
+                    updateTestStatus(testName, 'error', `❌ HTTP ${response.status}`);
+                    log(`Signup failed: HTTP ${response.status} - ${errorText}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateTestStatus(testName, 'error', `❌ ${error.message}`);
+                log(`Signup error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testLogin() {
+            const testName = 'Login API';
+            updateTestStatus(testName, 'pending', 'Testing...');
+            log('Testing login endpoint...', 'info');
+
+            // First try to create a test user
+            const testUser = {
+                username: `logintest_${Date.now()}`,
+                email: `logintest_${Date.now()}@example.com`,
+                password: 'TestPassword123!'
+            };
+
+            try {
+                // Create user first
+                await fetch(`${backendUrl}/api/auth/signup`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testUser)
+                });
+
+                // Now try to login
+                const loginData = {
+                    username: testUser.username,
+                    password: testUser.password
+                };
+
+                const response = await fetch(`${backendUrl}/api/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(loginData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateTestStatus(testName, 'success', '✅ Login successful, JWT received');
+                    log(`Login successful: ${JSON.stringify(data)}`, 'success');
+                    return true;
+                } else {
+                    const errorText = await response.text();
+                    updateTestStatus(testName, 'error', `❌ HTTP ${response.status}`);
+                    log(`Login failed: HTTP ${response.status} - ${errorText}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                updateTestStatus(testName, 'error', `❌ ${error.message}`);
+                log(`Login error: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testCORS() {
+            const testName = 'CORS Check';
+            updateTestStatus(testName, 'pending', 'Testing...');
+            log('Testing CORS configuration...', 'info');
+
+            try {
+                const response = await fetch(`${backendUrl}/api/health`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                });
+
+                if (response.ok) {
+                    updateTestStatus(testName, 'success', '✅ CORS configured correctly');
+                    log('CORS test successful - no errors in console', 'success');
+                    return true;
+                } else {
+                    updateTestStatus(testName, 'error', `❌ HTTP ${response.status}`);
+                    log(`CORS test failed: HTTP ${response.status}`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                if (error.message.includes('CORS')) {
+                    updateTestStatus(testName, 'error', '❌ CORS error - check CORS_ORIGINS env var');
+                    log(`CORS error: ${error.message}`, 'error');
+                } else {
+                    updateTestStatus(testName, 'error', `❌ ${error.message}`);
+                    log(`CORS test error: ${error.message}`, 'error');
+                }
+                return false;
+            }
+        }
+
+        async function runAllTests() {
+            log('Starting comprehensive test suite...', 'info');
+            document.getElementById('testResults').innerHTML = '<p>Running tests...</p>';
+
+            const tests = [
+                { name: 'Health Check', func: testHealth },
+                { name: 'Actuator Health', func: testActuatorHealth },
+                { name: 'CORS Check', func: testCORS },
+                { name: 'Signup API', func: testSignup },
+                { name: 'Login API', func: testLogin }
+            ];
+
+            let passedTests = 0;
+            for (let test of tests) {
+                log(`Running ${test.name}...`, 'info');
+                const result = await test.func();
+                if (result) passedTests++;
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between tests
+            }
+
+            const totalTests = tests.length;
+            const summary = `Test Summary: ${passedTests}/${totalTests} tests passed`;
+
+            if (passedTests === totalTests) {
+                log(`🎉 ${summary} - All tests passed!`, 'success');
+            } else {
+                log(`⚠️ ${summary} - Some tests failed`, 'warning');
+            }
+
+            // Add summary to results
+            const resultDiv = document.getElementById('testResults');
+            const summaryDiv = document.createElement('div');
+            summaryDiv.style.marginTop = '20px';
+            summaryDiv.style.padding = '15px';
+            summaryDiv.style.borderRadius = '5px';
+            summaryDiv.style.fontWeight = 'bold';
+
+            if (passedTests === totalTests) {
+                summaryDiv.className = 'success';
+                summaryDiv.innerHTML = `🎉 All ${totalTests} tests passed! Your backend is working correctly.`;
+            } else {
+                summaryDiv.className = 'error';
+                summaryDiv.innerHTML = `⚠️ ${passedTests}/${totalTests} tests passed. Check the logs for details.`;
+            }
+
+            resultDiv.appendChild(summaryDiv);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            log('Deployment test page loaded', 'info');
+            log('Enter your backend URL and click "Run All Tests" to verify deployment', 'info');
+        });
+    </script>
+</body>
+</html>

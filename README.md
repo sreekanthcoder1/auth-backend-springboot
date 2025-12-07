@@ -5,17 +5,21 @@ A robust Spring Boot REST API for user authentication with JWT tokens, email not
 ## 🚀 Recent Updates
 
 ### Docker Fix (December 2024)
-**✅ FIXED**: Updated Dockerfile to use `eclipse-temurin:17-jdk-slim` instead of deprecated `openjdk:17-jdk-slim`
+**✅ FIXED**: Updated Dockerfile to use `eclipse-temurin:17-jdk` instead of deprecated `openjdk:17-jdk-slim`
 
 ```dockerfile
 # OLD (deprecated)
 FROM openjdk:17-jdk-slim
 
 # NEW (fixed)
-FROM eclipse-temurin:17-jdk-slim
+FROM eclipse-temurin:17-jdk
 ```
 
-This resolves the Docker build error: `"openjdk:17-jdk-slim: not found"`
+This resolves the Docker build errors:
+- `"openjdk:17-jdk-slim: not found"` 
+- `"eclipse-temurin:17-jdk-slim: not found"`
+
+**Note**: Eclipse Temurin uses different tag formats than the deprecated OpenJDK images.
 
 ## 🛠️ Tech Stack
 
@@ -248,12 +252,15 @@ src/
 
 ### Docker Build Issues
 ```bash
-# If you get "openjdk not found" error:
+# If you get "openjdk not found" or "eclipse-temurin:17-jdk-slim not found":
 # Pull latest code (this is already fixed)
 git pull origin main
 
 # Rebuild image
 docker build --no-cache -t auth-backend .
+
+# Verify correct base image
+docker history auth-backend | head -5
 ```
 
 ### Database Connection Issues

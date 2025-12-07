@@ -1,8 +1,19 @@
 # Authentication Application
 
-A full-stack authentication application built with Spring Boot (backend) and React (frontend), featuring user registration, login, JWT authentication, email notifications, and optional n8n workflow integration.
+A full-stack authentication application built with Spring Boot (backend) and React (frontend), featuring user registration, login, JWT authentication, email notifications, and **automatic deployment** via GitHub Actions.
 
-## 🚀 Features
+## 🔄 **AUTOMATIC DEPLOYMENT ACTIVE** 
+✅ **Repository:** https://github.com/sreekanthcoder1/auth-backend-springboot  
+✅ **Push to Deploy:** Every `git push` automatically deploys to production  
+✅ **Railway Backend:** Auto-deploys Spring Boot + MySQL  
+✅ **Vercel Frontend:** Auto-deploys React app  
+✅ **GitHub Actions:** CI/CD pipeline with health checks  
+
+**Last Updated:** December 7, 2024 - Automatic deployment configured and ready!
+
+## 🚀 Features & Deployment
+
+### Core Features
 
 - **User Authentication**: Sign up and login functionality
 - **JWT Security**: Secure token-based authentication
@@ -11,7 +22,15 @@ A full-stack authentication application built with Spring Boot (backend) and Rea
 - **Modern UI**: Clean, responsive React interface
 - **API Documentation**: RESTful API endpoints
 - **n8n Integration**: Optional workflow triggers on user signup
-- **Production Ready**: Environment-based configuration
+
+### 🚀 **Automatic Deployment Features**
+- **🔄 Push-to-Deploy**: `git push origin main` → Automatic deployment
+- **⚡ Zero Downtime**: Rolling deployments with health checks
+- **📊 Monitoring Dashboard**: Real-time deployment status
+- **🔧 Railway Integration**: Auto-deploy backend + database
+- **⚡ Vercel Integration**: Auto-deploy frontend
+- **🏗️ GitHub Actions**: Professional CI/CD pipeline
+- **🛡️ Rollback Safety**: Failed deployments don't break production
 
 ## 🏗️ Tech Stack
 
